@@ -1,0 +1,88 @@
+#include "FSM.h"
+
+
+FSM::FSM(void)
+{
+	mDefaultState = NULL;
+	mCurrentState = NULL;
+}
+
+
+FSM::~FSM(void)
+{
+	for(list<State *>::iterator i = mStates.begin(); i != mStates.end(); i++){
+		if(*i)
+			delete (*i);
+
+		i  = mStates.erase(i);
+	}
+
+}
+
+void FSM::setInitState(int stateID)	// set default state
+{
+	mDefaultState = getStateFromID(stateID);
+
+}
+
+void FSM::addState(State *s)
+{
+	mStates.push_back(s);
+}
+
+void FSM::removeState(int stateID)
+{
+	State *s = getStateFromID(stateID);
+	if(s)		// only remove if stateID exists
+	{
+		mStates.remove(s);
+		delete s;
+	}
+}
+
+void FSM::update()
+{
+	// check if there is a valid currentState
+	if(!mCurrentState)
+	{
+		mCurrentState = mDefaultState;
+		mCurrentState->enterState();
+	}
+	if(!mCurrentState)
+		return;
+
+	// execute actual state and get id back
+	int newStateID = mCurrentState->update();
+
+	if(newStateID != mCurrentState->getID())		// should we enter a new state ?
+	{
+		mCurrentState->exitState();
+		mCurrentState = getStateFromID(newStateID);
+		mCurrentState->enterState();
+	}
+}
+
+void FSM::changeState(int stateID)
+{
+	State *newState = getStateFromID(stateID);
+	if(newState)
+	{
+		mCurrentState->exitState();
+		mCurrentState = newState;
+		mCurrentState->enterState();
+	}
+}
+
+void FSM::reset()
+{
+	mCurrentState = mDefaultState; 
+}
+
+State* FSM::getStateFromID(int stateID)
+{
+	for(list<State *>::iterator i = mStates.begin(); i != mStates.end(); i++){
+		if((*i)->getID() == stateID)
+			return *i;
+	}
+	return NULL;
+}
